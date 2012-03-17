@@ -11,7 +11,7 @@ namespace CTL.NN
         public double PesoOffset;
         public double[] Entradas;
         public double Saída;
-        public string desc;
+        public int desc;
         public int nEntradas
         {
             get

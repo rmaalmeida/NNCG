@@ -15,7 +15,7 @@ namespace CTL.CT
         }
 
         //Encontra uma esfera N-dimensional
-        public Sphere(List<Vector> nPontos, string nNome, int nNivel) : base (nPontos,nNome, nNivel)
+        public Sphere(List<Vector> nPontos, int nNome, int nNivel) : base (nPontos,nNome, nNivel)
         {
 
 

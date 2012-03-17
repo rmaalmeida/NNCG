@@ -44,7 +44,7 @@ namespace CTL
 			
 			List<Dados> data;
 			
-			data  = Segmentacao ();
+			data  = Flor ();
 			
 			
             imprimeMelhorResultado(BateriaDeTestes(data, t, 1));
@@ -96,13 +96,13 @@ namespace CTL
 	            for (int i = 0; i < grupos.Count; i++)
 	            {
 					if (nTeste.BV == 2){
-	                	caixas.Add(new OBB(dadosTreino[i], "-" + i.ToString() + "-",0));
+	                	caixas.Add(new OBB(dadosTreino[i], Convert.ToInt32 (Math.Pow (2,i)),0));
 					}
 					if (nTeste.BV == 1){
 	                	//caixas.Add(new AABB(dadosTreino[i], "-" + i.ToString() + "-",0));
 					}
 					if (nTeste.BV == 0){
-	                	caixas.Add(new Sphere(dadosTreino[i], "-" + i.ToString() + "-",0));
+	                	caixas.Add(new Sphere(dadosTreino[i], Convert.ToInt32 (Math.Pow (2,i)),0));
 					}
 					
 	            }
@@ -141,7 +141,7 @@ namespace CTL
 	                caixas.Clear();
 	                for (int i = 0; i < grupos.Count; i++)
 	                {
-	                    caixas.Add(new BoundingVolume(dadosTeste[i], "-"+i.ToString()+"-",0));
+	                    caixas.Add(new BoundingVolume(dadosTeste[i], Convert.ToInt32 (Math.Pow (2,i)),0));
 	                }
 	                TestaPontos(caixas, redes,nTeste, out result.testeCertos, out result.testeErrados);
 	            }
@@ -168,7 +168,7 @@ namespace CTL
 	                    double max = double.NegativeInfinity;
 	                    int maxNeuronio = -1;
 	                    int maxRede = -1;
-	                    string voto = "";
+	                    int voto = 0;
 	
 	
 	                    //Acha valor maximo entre os neurônios de saída
@@ -220,7 +220,7 @@ namespace CTL
 	                    {
 							double max = double.NegativeInfinity;
 							int maxIndex =  -1;
-							string voto = "";
+							int voto = -1;
 	                        double[] respostas = redes[nRede].CalculaSaída(ponto);
 							
 							//achar o neuronio com maior valor para cada rede
@@ -236,7 +236,7 @@ namespace CTL
 							//as vezes nao acha o index por problemas de contas nos neurônios
 	                        if (maxIndex == -1)
 							{
-								voto = "";
+								voto = -1;
 							}
 							else
 							{

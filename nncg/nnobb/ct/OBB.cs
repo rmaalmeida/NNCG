@@ -15,7 +15,7 @@ namespace CTL.CT
 		public Matrix VectoresFace;
 		
         //Encontra uma caixa N-dimensional orientada ao eixo de maior significancia
-        public OBB(List<Vector> nPontos, string nNome, int nNivel) : base (nPontos, nNome, nNivel)
+        public OBB(List<Vector> nPontos, int nNome, int nNivel) : base (nPontos, nNome, nNivel)
         {
             if ((nPontos == null) || (nPontos.Count == 0))
             {

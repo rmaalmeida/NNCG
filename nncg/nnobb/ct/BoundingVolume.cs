@@ -6,7 +6,7 @@ namespace CTL.CT
 {
 	public class BoundingVolume
 	{
-		public string Nome;
+		public int Nome;
 		public List<Vector> Pontos;
 		
 		public List<Vector> PontosAcima;
@@ -35,7 +35,7 @@ namespace CTL.CT
                 return Pontos[0].Length;
             }
         }
-		public BoundingVolume(List<Vector> nPontos, string nNome, int nNivel)
+		public BoundingVolume(List<Vector> nPontos, int nNome, int nNivel)
         {
 			
             this.Pontos = nPontos;

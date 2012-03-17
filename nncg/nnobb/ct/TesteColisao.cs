@@ -40,11 +40,11 @@ namespace CTL.CT
 					
 					BoundingVolume c1 = boundingVolumes [i];
 					List<Vector> pontos = new List<Vector> ();
-					string nome2 = "";
+					int nome2 = 0;
 					for (int j = 0; j < boundingVolumes.Count; j++) {
 						if (i != j) {
 							pontos.AddRange (boundingVolumes [j].Pontos.ToArray ());
-							nome2 += boundingVolumes [j].Nome;
+							nome2 += Convert.ToInt32 (Math.Pow (2,i));
 						}
 					}
 					BoundingVolume c2 = new OBB (pontos, nome2, boundingVolumes [i].nivel);

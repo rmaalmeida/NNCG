@@ -10,14 +10,14 @@ namespace CTL.CT
 	 	public List<Plano>	planos;
         public Matrix padDentro;
 		public Matrix padFora;
-		public string dentro;
-		public string fora;
+		public int dentro;
+		public int fora;
 		
 		public PreRedeNeural()
 		{
 			planos = new List<Plano>();
-			dentro = "";
-			fora = "";
+			dentro = 0;
+			fora = 0;
 		}
 		
 		public Rede GerarRedeNeural(Rede.FAtivação[] fs){
