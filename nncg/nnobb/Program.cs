@@ -21,283 +21,139 @@ namespace CTL
         [STAThread]
         static void Main()
         {
-			TesteColisao.Bounds = false;
-			TesteColisao.MBC = true;
-			TesteColisao.MPD  = false;
-			TesteColisao.TODOS  = false;
 			
 			System.Diagnostics.Stopwatch tempo = new System.Diagnostics.Stopwatch();
 			tempo.Start();
 			
             Teste t = new Teste();
-            t.seed = 680;
+            t.seed = 0;
             t.folds = 10;
             t.profundidade = 20;
             t.desc = "generico";
+			t.Bounds = true;
+			t.MBC = true;
+			t.MPD  = false;
+			t.TODOS  = false;
+			
+			List<Dados> data;
+			
             //imprimeMelhorResultado(BateriaDeTestes(Flor, t, 1));
-            //imprimeMelhorResultado(BateriaDeTestes(Vidro, t, 1));
+			data  = Vinho ();
+			//data  = Segmentacao();
+			
+			
+            imprimeMelhorResultado(BateriaDeTestes(data, t, 10));
             //imprimeMelhorResultado(BateriaDeTestes(Vinho, t, 1));
-            imprimeMelhorResultado(BateriaDeTestes(Vogal, t, 1));
+            //imprimeMelhorResultado(BateriaDeTestes(Vogal, t, 1));
             //imprimeMelhorResultado(BateriaDeTestes(Carro, t, 1));
             //imprimeMelhorResultado(BateriaDeTestes(Segmentacao, t, 1));
 			Console.WriteLine(tempo.ElapsedMilliseconds.ToString ());
-            System.Console.ReadLine();
+            //System.Console.ReadLine();
         }
-
-
-        public static Resultado Teste(FuncaoFold f, Teste teste)
-        {
-            Resultado R = new Resultado();
-            R.teste = teste;
-            for (int i = 0; i < teste.folds; i++)
-            {
-                R.resultados.Add(f.Invoke(teste.folds, i, teste.profundidade, teste.seed));
-            }
-            return R;
-        }
-
 		
+		
+        public static List<Resultado> BateriaDeTestes(List<Dados> nDados, Teste t, int repetições)
+        {
+            List<Resultado> resultFinal = new List<Resultado>();
+            
+			//for (int rep = t.seed; rep < (t.seed + repetições); rep++)
+			while(repetições > 0)
+			{
+				foreach(Dados d in nDados){
+					d.ReSeedDados(t.seed, t.folds);	
+				}
+	
+				
+				//realiza o teste para cada 'fold'
+
+                resultFinal.Add(ExecutaTeste(nDados,t));
+					
+				imprimeResultado(resultFinal[resultFinal.Count -1]);
+				
+				t.seed++;
+				repetições--;
+            }
+            return resultFinal;
+        }
+		
+
 		
 		
 //        public void TestaPadrao()
 //        {
 //            TesteFuncão(Padrao, nbFolds, nbProf, nbSeed);
 //        }		
-        public delegate result FuncaoFold(int qtdDivisoes, int divisaoTeste, int profundidade, int seed);
 
-        public static List<Resultado> BateriaDeTestes(FuncaoFold f, Teste t, int repetições)
+		
+        public static Resultado ExecutaTeste(List<Dados> grupos, Teste nTeste)
         {
-            List<Resultado> resultFinal = new List<Resultado>();
-            for (int rep = t.seed; rep < (t.seed + repetições); rep++) {
+			Resultado resultado = new Resultado(nTeste);
 
-                Teste nTeste = new Teste(t);
-                nTeste.seed = rep;
-                resultFinal.Add(Teste(f,nTeste));
-				imprimeResultado(resultFinal[resultFinal.Count -1]);
-            }
-            return resultFinal;
-        }
-		
-		
-        public static void imprimeResultado(Resultado result){
-         
-            List<string> log = new List<string>();
-
-            
-            log.AddRange(result.ImprimeTeste().ToArray());
-            for (int i = 0; i < log.Count; i++)
+			for (int fold = 0; fold < nTeste.folds; fold++)
 			{
-            	Console.WriteLine(log[i]);
-            }
-		}
-		
-        public static void imprimeMelhorResultado(List<Resultado> result){
-
-            char tab = '\u0009';
-            
-            List<string> log = new List<string>();
-
-            log.Add("Data:" + tab.ToString() + DateTime.Now.ToUniversalTime());
-            log.Add("Bounds:" + tab.ToString() + TesteColisao.Bounds.ToString());
-            log.Add("MPD:" + tab.ToString() + TesteColisao.MPD .ToString());
-            log.Add("MBC:" + tab.ToString() + TesteColisao.MBC.ToString());
-            log.Add("---------");
-
-            int melhor = 0;
-            for (int i = 0; i < result.Count; i++)
-            {
-                //log.AddRange(result[i].ImprimeTeste().ToArray());
-                if (result[melhor].testeMedia < result[i].testeMedia)
-                {
-                    melhor = i;
-                }
-            }
-            log.Add("Melhor Teste");
-            log.AddRange(result[melhor].ImprimeTeste().ToArray());
-
-
-
-			if (arquivar)
-            {
-                string arquivo = Application.StartupPath + "/NNCG - ";
-                if (TesteColisao.Bounds)
-                    arquivo += " Bounds ";
-                if (TesteColisao.MBC)
-                    arquivo += " MBC ";
-                if (TesteColisao.MPD)
-                    arquivo += " MPD ";
-
-                arquivo += ".txt";
-                System.IO.StreamWriter sw = new System.IO.StreamWriter(arquivo, false);
-                for (int i = 0; i < log.Count; i++)
-                {
-                    sw.WriteLine(log[i]);
-                }
-                sw.Close();
-            }
-			else
-			{	
-				for (int i = 0; i < log.Count; i++)
-				{
-                    Console.WriteLine(log[i]);
-                }
+	            List<List<Vector>> dadosTreino = new List<List<Vector>>();
+	            List<List<Vector>> dadosTeste = new List<List<Vector>>();
+	
+	
+	            for (int i = 0; i < grupos.Count; i++)
+	            {
+	                dadosTreino.Add(grupos[i].GetKFoldTreino(nTeste.folds, fold));
+	                dadosTeste.Add(grupos[i].GetKFoldTeste(nTeste.folds, fold));
+	            }
+	
+	            List<BoundingVolume> caixas = new List<BoundingVolume>();
+				
+				//Aqui Seleciona o tipo de bounding volume
+	            for (int i = 0; i < grupos.Count; i++)
+	            {
+	                caixas.Add(new OBB(dadosTreino[i], "-" + i.ToString() + "-",0));
+	            }
+	
+	    
+				List<PreRedeNeural> preRede = new List<PreRedeNeural>();
+				
+				TesteColisao teste = new TesteColisao(nTeste);
+	
+	            preRede = teste.RealizaTeste(caixas);
+				
+				result result = new result();
+	            foreach (BoundingVolume c in caixas)
+	            {
+	                result.profundidadeMaxima = Math.Max(result.profundidadeMaxima, c.MaxProfundidade());
+	            }
+	            foreach (PreRedeNeural p in preRede)
+	            {
+	                result.planos += p.planos.Count;
+	            }
+	            foreach (PreRedeNeural p in preRede)
+	            {
+	                result.padroes += p.padDentro.RowCount;
+					result.padroes += p.padFora.RowCount;
+	            }
+				
+	            List<Rede> redes = GeraRedesNeurais(preRede, nTeste);
+				
+	            result dummy = TestaPontos(caixas, redes);
+	            result.treinoCertos = dummy.treinoCertos;
+	            result.treinoErrados = dummy.treinoErrados;
+				
+	            if (dadosTeste.Count == dadosTreino.Count)
+	            {
+	                caixas.Clear();
+	                for (int i = 0; i < grupos.Count; i++)
+	                {
+	                    caixas.Add(new BoundingVolume(dadosTeste[i], "-"+i.ToString()+"-",0));
+	                }
+	                dummy = TestaPontos(caixas, redes);
+	                result.testeCertos = dummy.treinoCertos;
+	                result.testeErrados = dummy.treinoErrados;
+	            }
+				resultado.resultados.Add (result);
 			}
-		}
-
-        public static result Padrao(int qtdDivisoes, int divisaoTeste, int profundidade, int seed)
-        {
-            List<Dados> grupos = new List<Dados>();
-
-            grupos.Add(new Dados(Numeros.DadosPadraoSeno(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosPadraoCaixa(),seed,qtdDivisoes));
-
-            return ExecutaTeste(grupos, qtdDivisoes, divisaoTeste, profundidade);
-        }
-        public static result Vinho(int qtdDivisoes, int divisaoTeste, int profundidade, int seed)
-        {
-            List<Dados> grupos = new List<Dados>();
-
-            grupos.Add(new Dados(Numeros.DadosVinho1(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVinho2(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVinho3(),seed,qtdDivisoes));
-
-            return ExecutaTeste(grupos, qtdDivisoes, divisaoTeste, profundidade);
-        }
-        public static result Flor(int qtdDivisoes, int divisaoTeste, int profundidade, int seed)
-        {
-            List<Dados> grupos = new List<Dados>();
-
-            grupos.Add(new Dados(Numeros.DadosIrisSetosa(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosIrisVersicolor(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosIrisVirginica(),seed,qtdDivisoes));
-
-            return ExecutaTeste(grupos, qtdDivisoes, divisaoTeste, profundidade);
-        }
-        public static result Vidro(int qtdDivisoes, int divisaoTeste, int profundidade, int seed)
-        {
-            List<Dados> grupos = new List<Dados>();
-            grupos.Add(new Dados(Numeros.DadosVidro1(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVidro2(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVidro3(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVidro5(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVidro6(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVidro7(),seed,qtdDivisoes));
-
-            return ExecutaTeste(grupos, qtdDivisoes, divisaoTeste, profundidade);
-        }
-        public static result Vogal(int qtdDivisoes, int divisaoTeste, int profundidade, int seed)
-        {
-            List<Dados> grupos = new List<Dados>();
-            grupos.Add(new Dados(Numeros.DadosVogal(0), seed, qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVogal(1), seed, qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVogal(2), seed, qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVogal(3), seed, qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVogal(4), seed, qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVogal(5), seed, qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVogal(6), seed, qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVogal(7), seed, qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVogal(8), seed, qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosVogal(9), seed, qtdDivisoes));
-
-
-            return ExecutaTeste(grupos, qtdDivisoes, divisaoTeste, profundidade);
-        }
-        public static result Segmentacao(int qtdDivisoes, int divisaoTeste, int profundidade, int seed)
-        {
-            List<Dados> grupos = new List<Dados>();
-            grupos.Add(new Dados(Numeros.DadosSeg1(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosSeg2(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosSeg3(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosSeg4(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosSeg5(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosSeg6(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosSeg7(),seed,qtdDivisoes));
-
-
-            return ExecutaTeste(grupos, qtdDivisoes, divisaoTeste, profundidade);
-        }
-        public static result Carro(int qtdDivisoes, int divisaoTeste, int profundidade, int seed)
-        {
-            List<Dados> grupos = new List<Dados>();
-            grupos.Add(new Dados(Numeros.DadosCarro1(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosCarro2(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosCarro3(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosCarro4(),seed,qtdDivisoes));
-
-
-            return ExecutaTeste(grupos, qtdDivisoes, divisaoTeste, profundidade);
-        }
-        public static result Diabetes(int qtdDivisoes, int divisaoTeste, int profundidade, int seed)
-        {
-            List<Dados> grupos = new List<Dados>();
-            grupos.Add(new Dados(Numeros.DadosDiabetes0(),seed,qtdDivisoes));
-            grupos.Add(new Dados(Numeros.DadosDiabetes1(),seed,qtdDivisoes));
-
-            return ExecutaTeste(grupos, qtdDivisoes, divisaoTeste, profundidade);
-        }
-
-
-        public static result ExecutaTeste(List<Dados> grupos, int qntDivisoes, int divisaoTeste, int profundidade)
-        {
-
-            List<List<Vector>> dadosTreino = new List<List<Vector>>();
-            List<List<Vector>> dadosTeste = new List<List<Vector>>();
-
-
-            for (int i = 0; i < grupos.Count; i++)
-            {
-                dadosTreino.Add(grupos[i].GetKFoldTreino(qntDivisoes, divisaoTeste));
-                dadosTeste.Add(grupos[i].GetKFoldTeste(qntDivisoes, divisaoTeste));
-            }
-
-            List<BoundingVolume> caixas = new List<BoundingVolume>();
-			
-			//Aqui Seleciona o tipo de bounding volume
-            for (int i = 0; i < grupos.Count; i++)
-            {
-                caixas.Add(new OBB(dadosTreino[i], "-" + i.ToString() + "-",0));
-            }
-
-            result result = new result();
-			List<PreRedeNeural> preRede;
-
-            TesteColisao.RealizaTeste(ref caixas, out preRede, profundidade);
-			
-            foreach (BoundingVolume c in caixas)
-            {
-                result.profundidadeMaxima = Math.Max(result.profundidadeMaxima, c.MaxProfundidade());
-            }
-            foreach (PreRedeNeural p in preRede)
-            {
-                result.planos += p.planos.Count;
-            }
-            foreach (PreRedeNeural p in preRede)
-            {
-                result.padroes += p.padDentro.RowCount;
-				result.padroes += p.padFora.RowCount;
-            }
-			
-            List<Rede> redes = GeraRedesNeurais(preRede);
-			
-            result dummy = TestaPontos(caixas, redes);
-            result.treinoCertos = dummy.treinoCertos;
-            result.treinoErrados = dummy.treinoErrados;
-			
-            if (dadosTeste.Count == dadosTreino.Count)
-            {
-                caixas.Clear();
-                for (int i = 0; i < grupos.Count; i++)
-                {
-                    caixas.Add(new BoundingVolume(dadosTeste[i], "-"+i.ToString()+"-",0));
-                }
-                dummy = TestaPontos(caixas, redes);
-                result.testeCertos = dummy.treinoCertos;
-                result.testeErrados = dummy.treinoErrados;
-            }
-            return result;
-        }
-
-        public static result TestaPontosMax(List<BoundingVolume> caixas, List<Rede> redes)
+			return resultado;
+        }		
+		
+        public static result TestaPontos(List<BoundingVolume> caixas, List<Rede> redes)
         {
             int correto = 0;
             int errado = 0;
@@ -310,9 +166,6 @@ namespace CTL
                 {
 
                     double[] ponto = caixas[nCaixa].Pontos[i].CopyToArray();
-
-                    //inicializa o vetor de votos cheio de zeros
-                    double[] votos = new double[caixas.Count];
 
                     double max = double.NegativeInfinity;
                     int maxNeuronio = -1;
@@ -356,7 +209,7 @@ namespace CTL
             return resultado;
         }
 
-        public static result TestaPontos(List<BoundingVolume> caixas, List<Rede> redes/*, List<PreRedeNeural> preRede*/)
+        public static result TestaPontosVoto(List<BoundingVolume> caixas, List<Rede> redes/*, List<PreRedeNeural> preRede*/)
         {
             int correto = 0;
             int errado = 0;
@@ -437,9 +290,17 @@ namespace CTL
         }
 		
 
-        public static List<Rede> GeraRedesNeurais(List<PreRedeNeural> preRede)
+        public static List<Rede> GeraRedesNeurais(List<PreRedeNeural> preRede,Teste nTeste)
         {
-            Rede.FAtivação[] fs = new Rede.FAtivação[2] { F1, F2 };
+            Rede.FAtivação[] fs;
+			if (nTeste.Bounds)
+			{
+			 	fs = new Rede.FAtivação[2] { F1Bounds, F2 };
+			}
+			else
+			{
+				fs = new Rede.FAtivação[2] { F1, F2 };	
+			}
 			List<Rede> r = new List<Rede>();
 			
 			foreach (PreRedeNeural prn in preRede)
@@ -485,23 +346,22 @@ namespace CTL
             return r;
         }
 		
-        public static double F1(double v)
+		
+		public static double F1Bounds(double v)
         {
-            if (TesteColisao.Bounds)
-            {
                 if (v > +1)
                     return +1;
                 if (v < -1)
                     return -1;
                 return v;
-            }
-            else
-            {
+        }
+		
+        public static double F1(double v)
+        {
                 if (v >= 0)
                     return +1;
                 else
                     return -1;
-            }
         }
 		
         public static double F2(double v)
@@ -571,6 +431,173 @@ namespace CTL
             //return t.ElapsedMilliseconds;
             return 1;
         }
+		
+		
+		#region impressao
+		
+        public static void imprimeResultado(Resultado result){
+         
+            List<string> log = new List<string>();
+
+            
+            log.AddRange(result.ImprimeTeste().ToArray());
+            for (int i = 0; i < log.Count; i++)
+			{
+            	Console.WriteLine(log[i]);
+            }
+		}
+		
+        public static void imprimeMelhorResultado(List<Resultado> result){
+
+            char tab = '\u0009';
+            
+            List<string> log = new List<string>();
+
+            log.Add("Data:" + tab.ToString() + DateTime.Now.ToUniversalTime());
+            log.Add("Bounds:" + tab.ToString() + result[0].teste.Bounds.ToString());
+            log.Add("MPD:" + tab.ToString() + result[0].teste.MPD.ToString());
+            log.Add("MBC:" + tab.ToString() + result[0].teste.MBC.ToString());
+            log.Add("---------");
+
+            int melhor = 0;
+            for (int i = 0; i < result.Count; i++)
+            {
+                //log.AddRange(result[i].ImprimeTeste().ToArray());
+                if (result[melhor].testeMedia < result[i].testeMedia)
+                {
+                    melhor = i;
+                }
+            }
+            log.Add("Melhor Teste");
+            log.AddRange(result[melhor].ImprimeTeste().ToArray());
+
+
+
+			if (arquivar)
+            {
+                string arquivo = Application.StartupPath + "/NNCG - ";
+                if (result[0].teste.Bounds)
+                    arquivo += " Bounds ";
+                if (result[0].teste.MBC)
+                    arquivo += " MBC ";
+                if (result[0].teste.MPD)
+                    arquivo += " MPD ";
+
+                arquivo += ".txt";
+                System.IO.StreamWriter sw = new System.IO.StreamWriter(arquivo, false);
+                for (int i = 0; i < log.Count; i++)
+                {
+                    sw.WriteLine(log[i]);
+                }
+                sw.Close();
+            }
+			else
+			{	
+				for (int i = 0; i < log.Count; i++)
+				{
+                    Console.WriteLine(log[i]);
+                }
+			}
+		}
+		
+		#endregion
+		
+		#region Data
+		
+        public static List<Dados> Padrao( )
+        {
+            List<Dados> grupos = new List<Dados>();
+
+            grupos.Add(new Dados(Numeros.DadosPadraoSeno()));
+            grupos.Add(new Dados(Numeros.DadosPadraoCaixa()));
+
+			return grupos;
+        }
+        public static List<Dados> Vinho( )
+        {
+            List<Dados> grupos = new List<Dados>();
+
+            grupos.Add(new Dados(Numeros.DadosVinho1()));
+            grupos.Add(new Dados(Numeros.DadosVinho2()));
+            grupos.Add(new Dados(Numeros.DadosVinho3()));
+
+            return grupos;
+        }
+        public static List<Dados> Flor( )
+        {
+            List<Dados> grupos = new List<Dados>();
+
+            grupos.Add(new Dados(Numeros.DadosIrisSetosa()));
+            grupos.Add(new Dados(Numeros.DadosIrisVersicolor()));
+            grupos.Add(new Dados(Numeros.DadosIrisVirginica()));
+
+            return grupos;
+        }
+        public static List<Dados> Vidro( )
+        {
+            List<Dados> grupos = new List<Dados>();
+            grupos.Add(new Dados(Numeros.DadosVidro1()));
+            grupos.Add(new Dados(Numeros.DadosVidro2()));
+            grupos.Add(new Dados(Numeros.DadosVidro3()));
+            grupos.Add(new Dados(Numeros.DadosVidro5()));
+            grupos.Add(new Dados(Numeros.DadosVidro6()));
+            grupos.Add(new Dados(Numeros.DadosVidro7()));
+
+            return grupos;
+        }
+        public static List<Dados> Vogal()
+        {
+            List<Dados> grupos = new List<Dados>();
+            grupos.Add(new Dados(Numeros.DadosVogal(0)));
+            grupos.Add(new Dados(Numeros.DadosVogal(1)));
+            grupos.Add(new Dados(Numeros.DadosVogal(2)));
+            grupos.Add(new Dados(Numeros.DadosVogal(3)));
+            grupos.Add(new Dados(Numeros.DadosVogal(4)));
+            grupos.Add(new Dados(Numeros.DadosVogal(5)));
+            grupos.Add(new Dados(Numeros.DadosVogal(6)));
+            grupos.Add(new Dados(Numeros.DadosVogal(7)));
+            grupos.Add(new Dados(Numeros.DadosVogal(8)));
+            grupos.Add(new Dados(Numeros.DadosVogal(9)));
+
+
+           return grupos;
+        }
+        public static List<Dados> Segmentacao()
+        {
+            List<Dados> grupos = new List<Dados>();
+            grupos.Add(new Dados(Numeros.DadosSeg1()));
+            grupos.Add(new Dados(Numeros.DadosSeg2()));
+            grupos.Add(new Dados(Numeros.DadosSeg3()));
+            grupos.Add(new Dados(Numeros.DadosSeg4()));
+            grupos.Add(new Dados(Numeros.DadosSeg5()));
+            grupos.Add(new Dados(Numeros.DadosSeg6()));
+            grupos.Add(new Dados(Numeros.DadosSeg7()));
+
+
+            return grupos;
+        }
+        public static List<Dados> Carro( )
+        {
+            List<Dados> grupos = new List<Dados>();
+            grupos.Add(new Dados(Numeros.DadosCarro1()));
+            grupos.Add(new Dados(Numeros.DadosCarro2()));
+            grupos.Add(new Dados(Numeros.DadosCarro3()));
+            grupos.Add(new Dados(Numeros.DadosCarro4()));
+
+
+            return grupos;
+        }
+        public static List<Dados> Diabetes( )
+        {
+            List<Dados> grupos = new List<Dados>();
+            grupos.Add(new Dados(Numeros.DadosDiabetes0()));
+            grupos.Add(new Dados(Numeros.DadosDiabetes1()));
+
+            return grupos;
+        }
+		
+		#endregion
+
 
     }
 

@@ -14,10 +14,11 @@ namespace CTL
         int qtdDados;
         int qtdCaracteristicas;
 
-        public Dados(double[,] nDados, int nSeed, int nDivisoes)
+        public Dados(double[,] nDados)
         {
             qtdDados = nDados.GetLength(0);
             qtdCaracteristicas = nDados.GetLength(1);
+			
             dados = new List<Vector>(qtdDados);
             for (int i = 0; i < qtdDados; i++)
             {
@@ -28,12 +29,16 @@ namespace CTL
                 }
                 dados.Add(new Vector(t));
             }
-            
+        }
+		
+		
+        public void ReSeedDados(int nSeed, int nDivisoes)
+        {
+			divisoes = nDivisoes;
             r = new Random(nSeed);
-            divisoes = nDivisoes;
-            kFold(divisoes);
             kFold(divisoes);
         }
+		
 
 
         public List<Vector> GetKFoldTeste(int nDivisoes, int Escolhido)
@@ -73,8 +78,8 @@ namespace CTL
                 divisoes = nDivisoes;
             }
 
-            //qntdade de treinamento È uma "unidade" a menos
-            // nove dÈcimos(9/10), sete oitavos (7/8) etc
+            //qntdade de treinamento √© uma "unidade" a menos
+            // nove d√©cimos(9/10), sete oitavos (7/8) etc
             //+1 por caua de arredondamento
             List<Vector> treinoo = new List<Vector>((qtdDados * (divisoes-1)) / divisoes + 1);
 
@@ -110,7 +115,7 @@ namespace CTL
                 qndPorDivisao = 1;
             }
 
-            //cria NDivisıes para inserir os dados
+            //cria NDivis√µes para inserir os dados
             dadosDivididos = new List<List<Vector>>(divisoes);
             for (int i = 0; i < divisoes; i++)
 			{
@@ -127,7 +132,7 @@ namespace CTL
                         break;
                     }
 
-                    //pega prÛximo ponto ainda n„o dividido
+                    //pega pr√≥ximo ponto ainda n√£o dividido
                     int indice = r.Next(0, lista.Count);
 
                     dadosDivididos[nDivisoes].Add(dados[lista[indice]]);
@@ -135,11 +140,6 @@ namespace CTL
                     lista.RemoveAt(indice);
                 }
             }
-        }
-
-        internal void NewSeed()
-        {
-            r = new Random();
         }
     }
 }

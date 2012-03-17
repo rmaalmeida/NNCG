@@ -8,6 +8,7 @@ namespace CTL.NN
     {
         public delegate double FAtivação(double e);
         public  Camada[] Camadas;
+		
         public Camada this[int i]
         {
             get
@@ -23,11 +24,11 @@ namespace CTL.NN
         public Rede(int[] nNeurônios, FAtivação[] F)
         {
             //menos 1 pois a primeira camada não conta
-            Camadas = new Camada[nNeurônios.Length -1];
+            Camadas = new Camada[nNeurônios.Length-1];
             for (int i = 0; i < nNeurônios.Length-1; i++)
             {
                 //o numero de entradas de uma camada é o numero de saidas(neurônios), da anterior
-                Camadas[i] = new Camada(nNeurônios[i+1], nNeurônios[i],F[i]);
+                Camadas[i] = new Camada(nNeurônios[i+1], nNeurônios[i], F[i]);
             }
         }
 		
@@ -41,6 +42,5 @@ namespace CTL.NN
             }
             return Camadas[Camadas.Length - 1].Saídas;
         }
-
     }
 }

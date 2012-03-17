@@ -43,12 +43,12 @@ namespace CTL.CT
             this.nivel = nNivel;
 		}
 		
-		public virtual int Projeta(ref List<Plano> Planos, BoundingVolume Caixa2)
+		public virtual List<Plano> Projeta(BoundingVolume Caixa2)
         {
 			throw new Exception("Implementar Projeta() com override na classe filho");
 		}
 		
-		public virtual int ProcuraPlano(ref List<Plano> Planos, BoundingVolume Caixa2)
+		public virtual List<Plano> ProcuraPlano(BoundingVolume Caixa2)
         {
 			throw new Exception("Implementar ProcuraPlano() com override na classe filho");
 		}

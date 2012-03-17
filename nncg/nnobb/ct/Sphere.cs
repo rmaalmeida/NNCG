@@ -67,8 +67,10 @@ namespace CTL.CT
             }
         }
 
-		public override int ProcuraPlano(ref List<Plano> Planos, BoundingVolume Caixa2)
+		public override List<Plano> ProcuraPlano( BoundingVolume Caixa2)
         {
+			List<Plano> Planos = new List<Plano>();
+			
             Vector vetDist = this.Centro.Subtract(Caixa2.Centro);
 			double dist = vetDist.Norm();
 			if (dist > (this.raio + ((Sphere)Caixa2).raio))
@@ -84,7 +86,7 @@ namespace CTL.CT
 				p.bias = -(p.Média.ScalarMultiply(p.VectorNormal));
 				Planos.Add(p);
 			}
-            return Planos.Count;
+            return Planos;
         }
 		
 		

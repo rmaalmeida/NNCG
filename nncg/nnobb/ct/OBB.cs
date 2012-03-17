@@ -231,19 +231,18 @@ namespace CTL.CT
 
         }
 		
-		public override int ProcuraPlano(ref List<Plano> Planos, BoundingVolume Caixa2)
+		public override List<Plano> ProcuraPlano(BoundingVolume Caixa2)
         {
-            int qntd = 0;
-            qntd += this.Projeta(ref Planos, Caixa2);
-            qntd += Caixa2.Projeta(ref Planos, this);
-
-            return qntd;
+			List<Plano> Planos = this.Projeta(Caixa2);
+			Planos.AddRange (Caixa2.Projeta(this).ToArray());
+            return Planos;
         }
 		
-        public override int Projeta(ref List<Plano> Planos, BoundingVolume nCaixa)
+        public override List<Plano> Projeta(BoundingVolume nCaixa)
         {
+			List<Plano> Planos = new List<Plano>();
 			OBB Caixa2 = ((OBB)nCaixa);
-            int qntd = 0;
+
             //    %--------------------------------------------------------
             //    % Projetando a Caixa2 nesta Caixa
             //    %--------------------------------------------------------
@@ -310,7 +309,7 @@ namespace CTL.CT
                         p.d_2 = Math.Max(dummy / 2, double.MinValue);
                         //p.significancia = 0;// p.d_2;// Caixa1.Qntd_Dados + Caixa2.Qntd_Dados;
                         Planos.Add(p);
-                        qntd++;
+						break;
                     }
                 }
                 else if (Centro_Projetado._data[i] < 0)
@@ -342,11 +341,11 @@ namespace CTL.CT
                         p.d_2 = Math.Max(dummy / 2, double.MinValue);
                         //p.significancia = 0;//p.d_2;// Caixa1.Qntd_Dados + Caixa2.Qntd_Dados;
                         Planos.Add(p);
-                        qntd++;
+						break;
                     }
                 }
             }
-            return qntd;
+            return Planos;
         }
 		
 		public override void CriaFilhos()

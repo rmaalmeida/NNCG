@@ -33,8 +33,9 @@ namespace CTL
     {
         public List<result> resultados;
         public Teste teste;
-        public Resultado(){
+        public Resultado(Teste nTeste){
             resultados = new List<result>();
+			teste = nTeste;
         }
 
         public double testeMedia

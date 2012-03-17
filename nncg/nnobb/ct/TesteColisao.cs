@@ -1,29 +1,31 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using MathNet.Numerics.LinearAlgebra;
 
 namespace CTL.CT
 {
-    public static class TesteColisao
+    public class TesteColisao
     {
-        public static bool MPD = false;
-		public static bool TODOS = false; //adicionar todos os planos encontrados?
-        public static bool MBC = false;
-        public static bool Bounds = false;
-		public static int qtThreads = 1;
-        public static List<System.Threading.Thread> threads;
-
-
-        public static void RealizaTeste(ref List<BoundingVolume> boundingVolumes, out List<PreRedeNeural> preRede, int prof)
+        public Teste tipo;
+		public int qtThreads = 1;
+        public List<Thread> threads;
+		public List<PreRedeNeural> PRN;
+		public List<BoundingVolume> boundingVolumes;
+		
+		delegate void Callback(List<Plano> planos);
+		
+		public TesteColisao ( Teste nTipo){
+			tipo = nTipo;
+		}
+		
+        public  List<PreRedeNeural> RealizaTeste(List<BoundingVolume> boundingVolumes)
         {
-            preRede = new List<PreRedeNeural>();
-            List<Plano> dummyplanos = new List<Plano>();
+            List<PreRedeNeural> preRede = new List<PreRedeNeural>();
             for (int i = 0; i < boundingVolumes.Count; i++)
             {
-                BoundingVolume c1 = boundingVolumes[i];
-                BoundingVolume c2;
-                PreRedeNeural p = new PreRedeNeural();
+
                 List<Vector> pontos = new List<Vector>();
                 string nome2 = "";
                 for (int j = 0; j < boundingVolumes.Count; j++)
@@ -34,26 +36,26 @@ namespace CTL.CT
                         nome2+= boundingVolumes[j].Nome;
                     }
                 }
-                c2 = new OBB(pontos, nome2, boundingVolumes[i].nivel);
+				
+				BoundingVolume c1 = boundingVolumes[i];
+                BoundingVolume c2 = new OBB(pontos, nome2, boundingVolumes[i].nivel);
 
                 //encontra os planos
-                testeColisao(ref p.planos, c1, c2, prof);
-
+                PreRedeNeural p = new PreRedeNeural();
+				p.planos = testeColisao(c1, c2);
                 //seleciona os planos
-                dummyplanos = SelecionaPlanos(c1, c2, p.planos, out p.padDentro, out p.padFora);
-
-                //atualiza os dados
-                p.dentro = c1.Nome;
-                p.fora = c2.Nome;
-                p.planos = dummyplanos;
+                p = GeraPreRedeNeural(c1, c2, p.planos);
+				//TODO SÓ SERVE PARA ONE-AGAINST-ALL COM MAXIMO SEM VOTO
+				p.padFora = new Matrix(0,0.0);
+				
                 preRede.Add(p);
             }
+			return preRede;
         }
 		
-        public static void RealizaTesteAaA(ref List<BoundingVolume> boundingVolumes, out List<PreRedeNeural> preRede, int prof)
+		public  List<PreRedeNeural> RealizaTesteAaA(List<BoundingVolume> boundingVolumes)
         {
-			preRede = new List<PreRedeNeural>();			
-			List<Plano> dummyplanos = new List<Plano>();
+			List<PreRedeNeural> preRede = new List<PreRedeNeural>();			
             for (int i = 0; i < boundingVolumes.Count; i++)
             {
 				BoundingVolume c1 = boundingVolumes[i];
@@ -62,204 +64,152 @@ namespace CTL.CT
                     PreRedeNeural p = new PreRedeNeural();
 					
 					//encontra os planos
-					
 					BoundingVolume c2 = boundingVolumes[j];
-	                testeColisao(ref p.planos,  c1, c2, prof);
+	                p.planos = testeColisao(c1, c2);
 					
 					//seleciona os planos
-	                dummyplanos = SelecionaPlanos(c1, c2, p.planos, out p.padDentro, out p.padFora);
-
-					//atualiza os dados
-					p.dentro = c1.Nome;
-					p.fora = c2.Nome;
-					p.planos = dummyplanos;
+	                p = GeraPreRedeNeural(c1, c2, p.planos);
+					
 	                preRede.Add(p);
 				}
             }
+			return preRede;
         }
-
-        private static void testeColisao(ref List<Plano> Planos, BoundingVolume C1, BoundingVolume C2, int prof)
+		
+        private List<Plano> testeColisao( BoundingVolume C1, BoundingVolume C2)
         {
             //    % Testa se duas caixas colidem, em caso afirmativo as divide até não haver
             //    % colisão ou não ser possivel mais dividir
-
-            int qntd = C1.ProcuraPlano(ref Planos, C2);
+			List<Plano> Planos =  C1.ProcuraPlano(C2);
 
             //    % Verifica se existe algum plano de separação, não encontrando nenhum plano
             //    % divide as caixas
-            if (qntd == 0)
+            if (Planos.Count == 0)
             {
-                if ((C1.QntdDados > 1) && (C1.Profundidade() < prof))
+                if ((C1.QntdDados > 1) && (C1.Profundidade() < tipo.profundidade))
                 {
 					C1.CriaFilhos();
                     //        % Caso ja existam os nós filhos
                     if (C1.volAcima != null)
                     {
-                        testeColisao(ref Planos,  C2,  C1.volAcima, prof);
+                       Planos.AddRange (testeColisao( C2,  C1.volAcima).ToArray ());
                     }
                     if (C1.volAbaixo != null)
                     {
-                        testeColisao(ref Planos,  C2, C1.volAbaixo, prof);
+                        Planos.AddRange (testeColisao(C2, C1.volAbaixo).ToArray ());
                     }
                 }
-                else if ((C2.QntdDados > 1) && (C2.Profundidade() < prof))
+                else if ((C2.QntdDados > 1) && (C2.Profundidade() < tipo.profundidade))
                 {
 					C2.CriaFilhos();
                     if (C2.volAcima != null)
                     {
-                        /* qntd +=*/
-                        testeColisao(ref Planos,  C1, C2.volAcima, prof);
+                        Planos.AddRange (testeColisao( C1, C2.volAcima).ToArray ());
                     }
                     if (C2.volAbaixo != null)
                     {
-                        /* qntd +=*/
-                        testeColisao(ref Planos, C1,  C2.volAbaixo, prof);
+                        Planos.AddRange (testeColisao( C1,  C2.volAbaixo).ToArray ());
                     }
                 }
             }
-            //return qntd;
+            return Planos;
         }
-
-        private static List<Plano> SelecionaPlanos(BoundingVolume Caixa1, BoundingVolume Caixa2, List<Plano> planos, out Matrix p1, out Matrix p2)
+        private PreRedeNeural GeraPreRedeNeural(BoundingVolume Caixa1, BoundingVolume Caixa2, List<Plano> planos)
         {
+			Matrix p1, p2;
 			
-			if (!TODOS)
-			{
-	            ElencaPlanos(Caixa1, Caixa2, ref planos);
-	
-	   	
-				List<Vector> pad1 = new List<Vector>();
-				List<Vector> pad2 = new List<Vector>();
-	
-				// Guarda o numero dos planos escolhidos
-	            List<int> PlanSelec = new List<int>();
-	
-	            // Guarda o numero dos planos NÃO escolhidos
-	            List<int> PlanNSelec = new List<int>(planos.Count);
-				
-	            for (int i = 0; i < planos.Count; i++)
-	            {
-	                PlanNSelec.Add(i);
-	            }
-	
-				
-	
-	            int ini1 = 0;
-	            int ini2 = 0;
-	            bool separado = false;
-	
-				
-	            while (!separado)
-	            {
-                    //retorna o número do plano, que é o índice dele na variavel "planos"
-	                int Indice = ProcuraIndiceSepara(ref ini1, ref  ini2, planos, Caixa1, Caixa2, PlanNSelec);
-	                //se nao encontrou incrementa ini2, pula esse ponto
-	                if (Indice == -1)
-	                {
-	                    ini2++;
-	                }
-	                else
-	                {
-						
-	                    PlanSelec.Add(Indice);
-	                    PlanNSelec.Remove(Indice);
-	
-	                    Vector vdummy1 = new Vector(Caixa1.QntdDados);
-	                    for (int i = 0; i < Caixa1.QntdDados; i++)
-	                    {
-	                        vdummy1._data[i] = VerificaPonto(Caixa1.Pontos[i], planos[Indice]);
-	                    }
-						
-						pad1.Add(vdummy1);
-	
-	
-	                    Vector vdummy2 = new Vector(Caixa2.QntdDados);
-	                    for (int i = 0; i < Caixa2.QntdDados; i++)
-	                    {
-	                        vdummy2._data[i] = VerificaPonto(Caixa2.Pontos[i], planos[Indice]);
-	                    }
-						pad2.Add(vdummy2);
-	
-	                }
-	                if (pad1.Count != 0)
-	                {
-	                    separado = VerificaSeparacao(pad1, pad2, ref ini1, ref ini2);
-	                }
-	
-	            }
-	
-	
-	
-	            List<Plano> novosPlanos = new List<Plano>();
-	            foreach (int i in PlanSelec)
-	            {
-	                novosPlanos.Add(planos[i]);
-	            }
-		
-	            if (Bounds)
-	            {
-	                AjustaDistancias(ref pad1, ref pad2, ref novosPlanos);
-	            }
-						
-				//para deixar binário, -1 ou 1;
-	            AjustaPadrões(ref pad1, ref pad2);
-	
-	            // pega os padrões de verdade
-				p1 = FindUnique(pad1);
-				p2 = FindUnique(pad2);
-	
-	
-	            return novosPlanos;
-			}
-			else
-			{
-	   	
-				List<Vector> pad1 = new List<Vector>();
-				List<Vector> pad2 = new List<Vector>();
-	
-				// Guarda o numero dos planos escolhidos
-	            List<int> PlanSelec = new List<int>();
-				Vector vdummy1 = new Vector(Caixa1.QntdDados);
-				Vector vdummy2 = new Vector(Caixa2.QntdDados);
-			
-	            for (int Indice = 0; Indice < planos.Count; Indice++)
-	            {
-	                PlanSelec.Add(Indice);
-					for (int i = 0; i < Caixa1.QntdDados; i++)
-	                {
-	                	vdummy1._data[i] = VerificaPonto(Caixa1.Pontos[i], planos[Indice]);
-	                }
+            ElencaPlanos(Caixa1, Caixa2, ref planos);
 
-					pad1.Add(vdummy1.Clone());
-	                for (int i = 0; i < Caixa2.QntdDados; i++)
-	                {
-	                	vdummy2._data[i] = VerificaPonto(Caixa2.Pontos[i], planos[Indice]);
-	                }
-					pad2.Add(vdummy2.Clone());
+   	
+			List<Vector> pad1 = new List<Vector>();
+			List<Vector> pad2 = new List<Vector>();
+
+			// Guarda o numero dos planos escolhidos
+            List<int> PlanSelec = new List<int>();
+
+            // Guarda o numero dos planos NÃO escolhidos
+            List<int> PlanNSelec = new List<int>(planos.Count);
+			
+            for (int i = 0; i < planos.Count; i++)
+            {
+                PlanNSelec.Add(i);
+            }
+			
+            int ini1 = 0;
+            int ini2 = 0;
+            bool separado = false;
+
+            while (!separado)
+            {
+                //retorna o número do plano, que é o índice dele na variavel "planos"
+                int Indice = ProcuraIndiceSepara(ref ini1, ref  ini2, planos, Caixa1, Caixa2, PlanNSelec);
+                //se nao encontrou incrementa ini2, pula esse ponto
+                if (Indice == -1)
+                {
+                    ini2++;
                 }
-				
-				List<Plano> novosPlanos = new List<Plano>();
-				foreach (int i in PlanSelec)
-	            {
-	               	novosPlanos.Add(planos[i]);
-	            }
-		
-	            if (Bounds)
-	            {
-	                AjustaDistancias(ref pad1, ref pad2, ref novosPlanos);
-	            }
-						
-				//para deixar binário, -1 ou 1;
-	            AjustaPadrões(ref pad1, ref pad2);
+                else
+                {
+					
+                    PlanSelec.Add(Indice);
+                    PlanNSelec.Remove(Indice);
+
+                    Vector vdummy1 = new Vector(Caixa1.QntdDados);
+                    for (int i = 0; i < Caixa1.QntdDados; i++)
+                    {
+                        vdummy1._data[i] = VerificaPonto(Caixa1.Pontos[i], planos[Indice]);
+                    }
+					
+					pad1.Add(vdummy1);
+
+
+                    Vector vdummy2 = new Vector(Caixa2.QntdDados);
+                    for (int i = 0; i < Caixa2.QntdDados; i++)
+                    {
+                        vdummy2._data[i] = VerificaPonto(Caixa2.Pontos[i], planos[Indice]);
+                    }
+					pad2.Add(vdummy2);
+
+                }
+                if (pad1.Count != 0)
+                {
+                    separado = VerificaSeparacao(pad1, pad2, ref ini1, ref ini2);
+                }
+
+            }
+
+            List<Plano> novosPlanos = new List<Plano>();
+            foreach (int i in PlanSelec)
+            {
+                novosPlanos.Add(planos[i]);
+            }
 	
-	            // pega os padrões de verdade
-				p1 = FindUnique(pad1);
-				p2 = FindUnique(pad2);
-				
-	            return novosPlanos;
-			}
+            if (tipo.Bounds)
+            {
+                AjustaDistancias(ref pad1, ref pad2, ref novosPlanos);
+            }
+					
+			//para deixar binário, -1 ou 1;
+            AjustaPadrões(ref pad1, ref pad2);
+
+            // pega os padrões de verdade
+			p1 = FindUnique(pad1);
+			p2 = FindUnique(pad2);
+
+			
+			PreRedeNeural nova_rede = new PreRedeNeural();
+			
+			nova_rede.planos = novosPlanos;
+			
+			nova_rede.padDentro = p1;
+			nova_rede.dentro = Caixa1.Nome;
+			
+			nova_rede.padFora = p2;
+			nova_rede.fora = Caixa2.Nome;
+			
+            return nova_rede;
+			
         }
-		
 		private static Matrix FindUnique(List<Vector> lv)
 		{
 			int _rowCount = lv[0].Length;
@@ -310,7 +260,6 @@ namespace CTL.CT
             }
             return resut;
         }	
-
         private static void AjustaPadrões(ref  List<Vector>  p1, ref  List<Vector>  p2)
         {
             for (int c = 0; c < p1.Count; c++)
@@ -339,7 +288,6 @@ namespace CTL.CT
                 }
             }
         }
-
         private static void AjustaDistancias(ref List<Vector> p1, ref  List<Vector>  p2, ref List<Plano> planos)
         {
             double dmin = double.MaxValue;
@@ -364,11 +312,10 @@ namespace CTL.CT
 
             }
         }
-
-        private static void ElencaPlanos(BoundingVolume Caixa1, BoundingVolume Caixa2, ref List<Plano> planos)
+        private void ElencaPlanos(BoundingVolume Caixa1, BoundingVolume Caixa2, ref List<Plano> planos)
         {
 
-            if (MBC)
+            if (tipo.MBC)
             {
                 for (int np = 0; np < planos.Count; np++)
                 {
@@ -388,6 +335,7 @@ namespace CTL.CT
                             Qntd1N++;
                         }
                     }
+					
                     for (int i = 0; i < Caixa2.QntdDados; i++)
                     {
                         if (VerificaPonto(Caixa2.Pontos[i], planos[np]) > 0)
@@ -421,7 +369,7 @@ namespace CTL.CT
                     //else
                     //    planos[np].significancia = -s1 * s2;
 
-                    if (MPD)
+                    if (tipo.MPD)
                     {
                         planos[np].significancia = -s1 * s2 * planos[np].d_2;
 
@@ -441,7 +389,7 @@ namespace CTL.CT
             }
             else
             {
-                if (MPD)
+                if (tipo.MPD)
                 {
                     for (int np = 0; np < planos.Count; np++)
                     {
@@ -451,8 +399,8 @@ namespace CTL.CT
                 }
             }
         }
-
-        private static int ProcuraIndiceSepara(ref int l1, ref int l2, List<Plano> planos, BoundingVolume Caixa1, BoundingVolume Caixa2, List<int> PlanNSelec)
+		
+        private int ProcuraIndiceSepara(ref int l1, ref int l2, List<Plano> planos, BoundingVolume Caixa1, BoundingVolume Caixa2, List<int> PlanNSelec)
         {
 
             //adjusting the pointers
@@ -479,7 +427,7 @@ namespace CTL.CT
                 }
 
                 //otherwise we keep the best result
-                if (Bounds)
+                if (tipo.Bounds)
                 {
                     if (Math.Sign(p1) == -Math.Sign(p2))
                     {
@@ -495,7 +443,6 @@ namespace CTL.CT
             //    planos[best].d_2 *= bestDist;
             return best;
         }
-
         private static bool VerificaSeparacao(List<Vector> Padrao1, List<Vector> Padrao2, ref int ini1, ref int ini2)
         {
             int l1 = ini1;
@@ -537,8 +484,7 @@ namespace CTL.CT
             ini2 = l2;
             return true;
         }
-
-        private static double VerificaPonto(Vector Ponto, Plano Plano)
+        private double VerificaPonto(Vector Ponto, Plano Plano)
         {
             //    % Verifica em qual plano o ponto esta
 
@@ -608,7 +554,7 @@ namespace CTL.CT
 
             soma += Plano.bias;
 
-            if (!Bounds)
+            if (!tipo.Bounds)
             {
                 if (soma >= 0)
                 {
