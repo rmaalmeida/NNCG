@@ -4,11 +4,18 @@ using System.Text;
 
 namespace CTL
 {
+	
     public struct Teste
     {
         public int folds;
         public int seed;
         public int profundidade;
+		
+		/// <summary>
+		/// 0 - Sphere, 1 - AABB, 2 - OBB
+		/// </summary>
+		public int BV;
+		
         public string desc;
 		public Boolean AaA;
 		public Boolean OaA;
@@ -24,6 +31,8 @@ namespace CTL
             desc = nTeste.desc;
             profundidade = nTeste.profundidade;
             seed = nTeste.seed;
+			
+			BV = nTeste.BV;
 			
 			AaA = nTeste.AaA;
 			OaA = nTeste.OaA;
@@ -112,7 +121,10 @@ namespace CTL
             log.Add("TxAcerto(treino):" + tab.ToString() + this.treinoMedia);
             log.Add("TxAcerto(teste):" + tab.ToString() + this.testeMedia);
             log.Add("..:::..");
-
+			
+			
+			log.Add("" + "treinoC" + tab + "E" + tab + "testeC" + tab + "E" + tab + "profMax" + tab + "plan" + tab + "padr");
+			
             for (j = 0; j < resultados.Count; j++)
             {
                 log.Add(resultados[j].ToString());

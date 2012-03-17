@@ -26,32 +26,29 @@ namespace CTL
 			tempo.Start();
 			
             Teste t = new Teste();
-            t.seed = 0;
+            t.seed = 1;
             t.folds = 10;
             t.profundidade = 20;
             t.desc = "generico";
+			
 			t.Bounds = true;
 			t.MBC = true;
 			t.MPD  = false;
 			t.TODOS  = false;
+			
 			t.AaA = true;
 			t.OaA = !t.AaA;
 			t.Voto = true;
 			
+			t.BV = 0;
+			
 			List<Dados> data;
 			
-            //imprimeMelhorResultado(BateriaDeTestes(Flor, t, 1));
-			data  = Vinho ();
-			//data  = Segmentacao();
+			data  = Flor ();
 			
 			
             imprimeMelhorResultado(BateriaDeTestes(data, t, 10));
-            //imprimeMelhorResultado(BateriaDeTestes(Vinho, t, 1));
-            //imprimeMelhorResultado(BateriaDeTestes(Vogal, t, 1));
-            //imprimeMelhorResultado(BateriaDeTestes(Carro, t, 1));
-            //imprimeMelhorResultado(BateriaDeTestes(Segmentacao, t, 1));
 			Console.WriteLine(tempo.ElapsedMilliseconds.ToString ());
-            //System.Console.ReadLine();
         }
 		
 		
@@ -59,7 +56,6 @@ namespace CTL
         {
             List<Resultado> resultFinal = new List<Resultado>();
             
-			//for (int rep = t.seed; rep < (t.seed + repetições); rep++)
 			while(repetições > 0)
 			{
 				foreach(Dados d in nDados){
@@ -68,26 +64,15 @@ namespace CTL
 	
 				
 				//realiza o teste para cada 'fold'
-
                 resultFinal.Add(ExecutaTeste(nDados,t));
-					
-				imprimeResultado(resultFinal[resultFinal.Count -1]);
-				
+
 				t.seed++;
 				repetições--;
             }
             return resultFinal;
         }
 		
-
-		
-		
-//        public void TestaPadrao()
-//        {
-//            TesteFuncão(Padrao, nbFolds, nbProf, nbSeed);
-//        }		
-
-		
+					
         public static Resultado ExecutaTeste(List<Dados> grupos, Teste nTeste)
         {
 			Resultado resultado = new Resultado(nTeste);
@@ -109,12 +94,19 @@ namespace CTL
 				//Aqui Seleciona o tipo de bounding volume
 	            for (int i = 0; i < grupos.Count; i++)
 	            {
-	                caixas.Add(new OBB(dadosTreino[i], "-" + i.ToString() + "-",0));
+					if (nTeste.BV == 2){
+	                	caixas.Add(new OBB(dadosTreino[i], "-" + i.ToString() + "-",0));
+					}
+					if (nTeste.BV == 1){
+	                	//caixas.Add(new AABB(dadosTreino[i], "-" + i.ToString() + "-",0));
+					}
+					if (nTeste.BV == 0){
+	                	caixas.Add(new Sphere(dadosTreino[i], "-" + i.ToString() + "-",0));
+					}
+					
 	            }
 	
-	    
-				//List<PreRedeNeural> preRede = new List<PreRedeNeural>();
-				
+	    				
 				TesteColisao teste = new TesteColisao(nTeste);
 	
 	            teste.RealizaTeste(caixas);
@@ -124,21 +116,18 @@ namespace CTL
 	            {
 	                result.profundidadeMaxima = Math.Max(result.profundidadeMaxima, c.MaxProfundidade());
 	            }
-	            foreach (PreRedeNeural p in teste.PRN)
+	            
+				foreach (PreRedeNeural p in teste.PRN)
 	            {
 	                result.planos += p.planos.Count;
-	            }
-	            foreach (PreRedeNeural p in teste.PRN)
-	            {
 	                result.padroes += p.padDentro.RowCount;
 					result.padroes += p.padFora.RowCount;
 	            }
 				
 	            List<Rede> redes = GeraRedesNeurais(teste.PRN, nTeste);
 				
-	            result dummy = TestaPontos(caixas, redes,nTeste);
-	            result.treinoCertos = dummy.treinoCertos;
-	            result.treinoErrados = dummy.treinoErrados;
+	            TestaPontos(caixas, redes, nTeste, out result.treinoCertos, out result.treinoErrados);
+	            
 				
 	            if (dadosTeste.Count == dadosTreino.Count)
 	            {
@@ -147,22 +136,19 @@ namespace CTL
 	                {
 	                    caixas.Add(new BoundingVolume(dadosTeste[i], "-"+i.ToString()+"-",0));
 	                }
-	                dummy = TestaPontos(caixas, redes,nTeste);
-	                result.testeCertos = dummy.treinoCertos;
-	                result.testeErrados = dummy.treinoErrados;
+	                TestaPontos(caixas, redes,nTeste, out result.testeCertos, out result.testeErrados);
 	            }
 				resultado.resultados.Add (result);
 			}
 			return resultado;
         }		
 		
-        public static result TestaPontos(List<BoundingVolume> caixas, List<Rede> redes, Teste tipo)
+        public static void TestaPontos(List<BoundingVolume> caixas, List<Rede> redes, Teste tipo, out int correto, out int errado)
         {
+			correto=0;
+			errado=0;
 			if (!tipo.Voto)
 			{
-	            int correto = 0;
-	            int errado = 0;
-	
 	            //teste para a caixa "ncaixa"
 	            for (int nCaixa = 0; nCaixa < caixas.Count; nCaixa++)
 	            {
@@ -207,17 +193,9 @@ namespace CTL
 	                    }
 	                }
 	            }
-	
-	            result resultado = new result();
-	            resultado.treinoCertos = correto;
-	            resultado.treinoErrados = errado;
-	            return resultado;
 			}
 			else
 			{
-				int correto = 0;
-	            int errado = 0;
-				
 				//teste para a caixa "ncaixa"
 	            for (int nCaixa = 0; nCaixa < caixas.Count; nCaixa++)
 	            {
@@ -245,13 +223,18 @@ namespace CTL
 								{
 									max = respostas[nResp];
 									maxIndex = nResp;
-	                                
 								}
 	                        }
-	                        
 							//decide o voto
-	                        voto = redes[nRede].Camadas[1][maxIndex].desc;
-	
+							//as vezes nao acha o index por problemas de contas nos neurônios
+	                        if (maxIndex == -1)
+							{
+								voto = "";
+							}
+							else
+							{
+	                        	voto = redes[nRede].Camadas[1][maxIndex].desc;
+							}
 							//contabiliza
 							for (int dc = 0; dc < caixas.Count; dc++)
 	        				{
@@ -265,7 +248,7 @@ namespace CTL
 							}
 	                    }
 						
-						//correr vetor de votos e achar maior,
+						//correr vetor de votos e achar maior
 						double Nmax = double.NegativeInfinity;
 						int NmaxIndex =  -1;
 						for (int v = 0; v<caixas.Count ;v++ )
@@ -286,11 +269,6 @@ namespace CTL
 						}
 	                }
 	            }
-	
-	            result resultado = new result();
-	            resultado.treinoCertos = correto;
-	            resultado.treinoErrados = errado;
-	            return resultado;
 			}
         }
 
@@ -338,71 +316,8 @@ namespace CTL
         {
             return v;
         }
-
    
-        public static long TempoPadrão()
-        {
-
-            //System.Diagnostics.Stopwatch t = new System.Diagnostics.Stopwatch();
-            //t.Reset();
-            //t.Start();
-            //int size = 300;
-            ////cria uma Matrix de senos
-            //double[,] mat = new double[size, size];
-            //for (int i = 0; i < size; i++)
-            //{
-            //    for (int j = 0; j < size; j++)
-            //    {
-            //        mat[i, j] = Math.Sin(i * j);
-            //    }
-            //}
-
-            ////concatena ela com ela mesma
-            //double[,] nMat = new double[size, size * 2];
-            //for (int i = 0; i < size; i++)
-            //{
-            //    for (int j = 0; j < size * 2; j++)
-            //    {
-            //        if (j < size)
-            //        {
-            //            nMat[i, j] = mat[i, j];
-            //        }
-            //        else
-            //        {
-            //            nMat[i, j] = mat[i, j - size];
-            //        }
-            //    }
-            //}
-
-            ////cria um Vector de cosenos
-            //double[] vet = new double[size];
-            //for (int i = 0; i < size; i++)
-            //{
-            //    vet[i] = Math.Cos(i);
-            //}
-
-            ////redimensiona a Matrix inicial para o dobro do tamanho
-            //mat = new double[size, size * 2];
-
-            ////multiplica Vector de cosenos com a Matrix concatenada e salva na antiga.
-            //for (int i = 0; i < size; i++)
-            //{
-            //    for (int j = 0; j < size * 2; j++)
-            //    {
-            //        double soma = 0;
-            //        for (int e = 0; e < size; e++)
-            //        {
-            //            soma += vet[e] * nMat[e, j];
-            //        }
-            //        mat[i, j] = soma;
-            //    }
-            //}
-            //t.Stop();
-            //return t.ElapsedMilliseconds;
-            return 1;
-        }
-		
-		
+     	
 		#region impressao
 		
         public static void imprimeResultado(Resultado result){
@@ -427,12 +342,16 @@ namespace CTL
             log.Add("Bounds:" + tab.ToString() + result[0].teste.Bounds.ToString());
             log.Add("MPD:" + tab.ToString() + result[0].teste.MPD.ToString());
             log.Add("MBC:" + tab.ToString() + result[0].teste.MBC.ToString());
+			log.Add("AaA:" + tab.ToString() + result[0].teste.AaA.ToString());
+			log.Add("OaA:" + tab.ToString() + result[0].teste.OaA.ToString());
+			log.Add("BV:" + tab.ToString() + result[0].teste.BV.ToString());
+			log.Add("Folds:" + tab.ToString() + result[0].teste.folds.ToString());
+			log.Add("Voto:" + tab.ToString() + result[0].teste.Voto.ToString());
             log.Add("---------");
 
             int melhor = 0;
             for (int i = 0; i < result.Count; i++)
             {
-                //log.AddRange(result[i].ImprimeTeste().ToArray());
                 if (result[melhor].testeMedia < result[i].testeMedia)
                 {
                     melhor = i;
