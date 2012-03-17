@@ -10,6 +10,9 @@ namespace CTL
         public int seed;
         public int profundidade;
         public string desc;
+		public Boolean AaA;
+		public Boolean OaA;
+		public Boolean Voto;
         public Boolean Bounds;
 	    public Boolean MBC;
 		public Boolean MPD;
@@ -21,6 +24,12 @@ namespace CTL
             desc = nTeste.desc;
             profundidade = nTeste.profundidade;
             seed = nTeste.seed;
+			
+			AaA = nTeste.AaA;
+			OaA = nTeste.OaA;
+			
+			Voto = nTeste.Voto;
+			
             Bounds = nTeste.Bounds;
             MBC = nTeste.MBC;
             MPD = nTeste.MPD;

@@ -34,6 +34,9 @@ namespace CTL
 			t.MBC = true;
 			t.MPD  = false;
 			t.TODOS  = false;
+			t.AaA = true;
+			t.OaA = !t.AaA;
+			t.Voto = true;
 			
 			List<Dados> data;
 			
@@ -110,30 +113,30 @@ namespace CTL
 	            }
 	
 	    
-				List<PreRedeNeural> preRede = new List<PreRedeNeural>();
+				//List<PreRedeNeural> preRede = new List<PreRedeNeural>();
 				
 				TesteColisao teste = new TesteColisao(nTeste);
 	
-	            preRede = teste.RealizaTeste(caixas);
+	            teste.RealizaTeste(caixas);
 				
 				result result = new result();
 	            foreach (BoundingVolume c in caixas)
 	            {
 	                result.profundidadeMaxima = Math.Max(result.profundidadeMaxima, c.MaxProfundidade());
 	            }
-	            foreach (PreRedeNeural p in preRede)
+	            foreach (PreRedeNeural p in teste.PRN)
 	            {
 	                result.planos += p.planos.Count;
 	            }
-	            foreach (PreRedeNeural p in preRede)
+	            foreach (PreRedeNeural p in teste.PRN)
 	            {
 	                result.padroes += p.padDentro.RowCount;
 					result.padroes += p.padFora.RowCount;
 	            }
 				
-	            List<Rede> redes = GeraRedesNeurais(preRede, nTeste);
+	            List<Rede> redes = GeraRedesNeurais(teste.PRN, nTeste);
 				
-	            result dummy = TestaPontos(caixas, redes);
+	            result dummy = TestaPontos(caixas, redes,nTeste);
 	            result.treinoCertos = dummy.treinoCertos;
 	            result.treinoErrados = dummy.treinoErrados;
 				
@@ -144,7 +147,7 @@ namespace CTL
 	                {
 	                    caixas.Add(new BoundingVolume(dadosTeste[i], "-"+i.ToString()+"-",0));
 	                }
-	                dummy = TestaPontos(caixas, redes);
+	                dummy = TestaPontos(caixas, redes,nTeste);
 	                result.testeCertos = dummy.treinoCertos;
 	                result.testeErrados = dummy.treinoErrados;
 	            }
@@ -153,141 +156,144 @@ namespace CTL
 			return resultado;
         }		
 		
-        public static result TestaPontos(List<BoundingVolume> caixas, List<Rede> redes)
+        public static result TestaPontos(List<BoundingVolume> caixas, List<Rede> redes, Teste tipo)
         {
-            int correto = 0;
-            int errado = 0;
-
-            //teste para a caixa "ncaixa"
-            for (int nCaixa = 0; nCaixa < caixas.Count; nCaixa++)
-            {
-                //teste para o ponto "i"
-                for (int i = 0; i < caixas[nCaixa].QntdDados; i++)
-                {
-
-                    double[] ponto = caixas[nCaixa].Pontos[i].CopyToArray();
-
-                    double max = double.NegativeInfinity;
-                    int maxNeuronio = -1;
-                    int maxRede = -1;
-                    string voto = "";
-
-
-                    //Acha valor maximo entre os neurônios de saída
-                    for (int nRede = 0; nRede < redes.Count; nRede++)
-                    {
-                        double[] respostas = redes[nRede].CalculaSaída(ponto);
-                        //achar o neuronio com maior valor para cada rede
-                        for (int nResp = 0; nResp < respostas.Length; nResp++)
-                        {
-                            if (max < respostas[nResp])
-                            {
-                                max = respostas[nResp];
-                                maxNeuronio = nResp;
-                                maxRede = nRede;
-                            }
-                        }
-                    }
-
-                    //decide o voto
-                    voto = redes[maxRede].Camadas[1][maxNeuronio].desc;
-
-                    if (voto == caixas[nCaixa].Nome)
-                    {
-                        correto++;
-                    }
-                    else
-                    {
-                        errado++;
-                    }
-                }
-            }
-
-            result resultado = new result();
-            resultado.treinoCertos = correto;
-            resultado.treinoErrados = errado;
-            return resultado;
-        }
-
-        public static result TestaPontosVoto(List<BoundingVolume> caixas, List<Rede> redes/*, List<PreRedeNeural> preRede*/)
-        {
-            int correto = 0;
-            int errado = 0;
-			
-			//teste para a caixa "ncaixa"
-            for (int nCaixa = 0; nCaixa < caixas.Count; nCaixa++)
-            {
-				//teste para o ponto "i"
-                for (int i = 0; i < caixas[nCaixa].QntdDados; i++)
-                {
-
-                    double[] ponto = caixas[nCaixa].Pontos[i].CopyToArray();
-					
-					//inicializa o vetor de votos cheio de zeros
-					double[] votos = new double[caixas.Count];
-					
-					//Acha valor maximo entre os neurônios de saída
-                    for (int nRede = 0; nRede < redes.Count; nRede++)
-                    {
-						double max = double.NegativeInfinity;
-						int maxIndex =  -1;
-						string voto = "";
-                        double[] respostas = redes[nRede].CalculaSaída(ponto);
+			if (!tipo.Voto)
+			{
+	            int correto = 0;
+	            int errado = 0;
+	
+	            //teste para a caixa "ncaixa"
+	            for (int nCaixa = 0; nCaixa < caixas.Count; nCaixa++)
+	            {
+	                //teste para o ponto "i"
+	                for (int i = 0; i < caixas[nCaixa].QntdDados; i++)
+	                {
+	
+	                    double[] ponto = caixas[nCaixa].Pontos[i].CopyToArray();
+	
+	                    double max = double.NegativeInfinity;
+	                    int maxNeuronio = -1;
+	                    int maxRede = -1;
+	                    string voto = "";
+	
+	
+	                    //Acha valor maximo entre os neurônios de saída
+	                    for (int nRede = 0; nRede < redes.Count; nRede++)
+	                    {
+	                        double[] respostas = redes[nRede].CalculaSaída(ponto);
+	                        //achar o neuronio com maior valor para cada rede
+	                        for (int nResp = 0; nResp < respostas.Length; nResp++)
+	                        {
+	                            if (max < respostas[nResp])
+	                            {
+	                                max = respostas[nResp];
+	                                maxNeuronio = nResp;
+	                                maxRede = nRede;
+	                            }
+	                        }
+	                    }
+	
+	                    //decide o voto
+	                    voto = redes[maxRede].Camadas[1][maxNeuronio].desc;
+	
+	                    if (voto == caixas[nCaixa].Nome)
+	                    {
+	                        correto++;
+	                    }
+	                    else
+	                    {
+	                        errado++;
+	                    }
+	                }
+	            }
+	
+	            result resultado = new result();
+	            resultado.treinoCertos = correto;
+	            resultado.treinoErrados = errado;
+	            return resultado;
+			}
+			else
+			{
+				int correto = 0;
+	            int errado = 0;
+				
+				//teste para a caixa "ncaixa"
+	            for (int nCaixa = 0; nCaixa < caixas.Count; nCaixa++)
+	            {
+					//teste para o ponto "i"
+	                for (int i = 0; i < caixas[nCaixa].QntdDados; i++)
+	                {
+	
+	                    double[] ponto = caixas[nCaixa].Pontos[i].CopyToArray();
 						
-						//achar o neuronio com maior valor para cada rede
-                        for (int nResp = 0; nResp < respostas.Length; nResp++)
-                        {
-							if (max <respostas[nResp])
-							{
-								max = respostas[nResp];
-								maxIndex = nResp;
-                                
+						//inicializa o vetor de votos cheio de zeros
+						double[] votos = new double[caixas.Count];
+						
+						//Acha valor maximo entre os neurônios de saída
+	                    for (int nRede = 0; nRede < redes.Count; nRede++)
+	                    {
+							double max = double.NegativeInfinity;
+							int maxIndex =  -1;
+							string voto = "";
+	                        double[] respostas = redes[nRede].CalculaSaída(ponto);
+							
+							//achar o neuronio com maior valor para cada rede
+	                        for (int nResp = 0; nResp < respostas.Length; nResp++)
+	                        {
+								if (max <respostas[nResp])
+								{
+									max = respostas[nResp];
+									maxIndex = nResp;
+	                                
+								}
+	                        }
+	                        
+							//decide o voto
+	                        voto = redes[nRede].Camadas[1][maxIndex].desc;
+	
+							//contabiliza
+							for (int dc = 0; dc < caixas.Count; dc++)
+	        				{
+								if (voto == caixas[dc].Nome)
+								{
+								  	//votos[dc] += max;
+									//soma 1 voto, mesmo que pequeno
+									votos[dc]++;
+									break;
+								}
 							}
-                        }
-                        
-						//decide o voto
-                        voto = redes[nRede].Camadas[1][maxIndex].desc;
-
-						//contabiliza
-						for (int dc = 0; dc < caixas.Count; dc++)
-        				{
-							if (voto == caixas[dc].Nome)
-							{
-							  	//votos[dc] += max;
-								//soma 1 voto, mesmo que pequeno
-								votos[dc]++;
-								break;
-							}
-						}
-                    }
-					
-					//correr vetor de votos e achar maior,
-					double Nmax = double.NegativeInfinity;
-					int NmaxIndex =  -1;
-					for (int v = 0; v<caixas.Count ;v++ )
-					{
-						if (Nmax < votos[v])
+	                    }
+						
+						//correr vetor de votos e achar maior,
+						double Nmax = double.NegativeInfinity;
+						int NmaxIndex =  -1;
+						for (int v = 0; v<caixas.Count ;v++ )
 						{
-							Nmax = votos[v];
-							NmaxIndex = v;
+							if (Nmax < votos[v])
+							{
+								Nmax = votos[v];
+								NmaxIndex = v;
+							}
 						}
-					}
-                    if (NmaxIndex == nCaixa)
-					{
-                        correto++;
-					}
-                    else
-					{
-                        errado++;
-					}
-                }
-            }
-
-            result resultado = new result();
-            resultado.treinoCertos = correto;
-            resultado.treinoErrados = errado;
-            return resultado;
+	                    if (NmaxIndex == nCaixa)
+						{
+	                        correto++;
+						}
+	                    else
+						{
+	                        errado++;
+						}
+	                }
+	            }
+	
+	            result resultado = new result();
+	            resultado.treinoCertos = correto;
+	            resultado.treinoErrados = errado;
+	            return resultado;
+			}
         }
+
 		
 
         public static List<Rede> GeraRedesNeurais(List<PreRedeNeural> preRede,Teste nTeste)
@@ -305,44 +311,8 @@ namespace CTL
 			
 			foreach (PreRedeNeural prn in preRede)
 			{
-				//juntar padDentro com padFora
-				//os primeiros neuronios representam pad dentro
-				
-				//qntd de entradas = qntd de variaveis
-				//qntd de neuronios na primeira camada = qnd de planos
-				//qntd de neuronios na segunda camada = qnd de padroes dentr+fora
-	            int[] camadas = new int[3] { prn.planos[0].VectorNormal.Length, prn.planos.Count, prn.padDentro.RowCount + prn.padFora.RowCount};
-	            Rede dummy = new Rede(camadas, fs);
-				
-				//preencher a primeira camada
-	            for (int neuronio = 0; neuronio < prn.planos.Count; neuronio++)
-	            {
-	                dummy[0][neuronio].Pesos = (prn.planos[neuronio].VectorNormal.Scale(1/prn.planos[neuronio].d_2)).CopyToArray();
-	                dummy[0][neuronio].PesoOffset = prn.planos[neuronio].bias / prn.planos[neuronio].d_2;
-	            }
-				
-				//preenchendo a segunda camada  paddentro
-	            double nentradasD = prn.padDentro.ColumnCount;
-				
-				
-	            for (int neuronio = 0; neuronio < prn.padDentro.RowCount; neuronio++)
-	            {
-	                dummy[1][neuronio].Pesos = (prn.padDentro.GetRowVector(neuronio).Scale( 1/nentradasD)).CopyToArray();
-	                dummy[1][neuronio].PesoOffset = 0;
-                    dummy[1][neuronio].desc = prn.dentro;
-	            }
-				
-				//padfora
-				double nentradasF = prn.padFora.ColumnCount;
-				for (int neuronio = 0; neuronio < prn.padFora.RowCount; neuronio++)
-	            {
-	                dummy[1][neuronio + prn.padDentro.RowCount].Pesos = (prn.padFora.GetRowVector(neuronio).Scale( 1/nentradasF)).CopyToArray();
-	                dummy[1][neuronio + prn.padDentro.RowCount].PesoOffset = 0;
-                    dummy[1][neuronio + prn.padDentro.RowCount].desc = prn.fora;
-	            }
-				
-				r.Add(dummy);
-			}   
+				r.Add(prn.GerarRedeNeural(fs));
+			}
             return r;
         }
 		
