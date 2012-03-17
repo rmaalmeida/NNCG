@@ -34,9 +34,8 @@ namespace CTL.CT
 		{
 			PRN = new List<PreRedeNeural> ();
 			
-			
-			for (int i = 0; i < boundingVolumes.Count; i++) {
-				
+			for (int i = 0; i < boundingVolumes.Count; i++)
+			{
 				if (tipo.AaA){
 					
 					BoundingVolume c1 = boundingVolumes [i];
@@ -89,6 +88,7 @@ namespace CTL.CT
 						PRN.Add (p);
 					}
 				}
+				Console.WriteLine(" + - RN " + i.ToString() + " gerada.");
 			}
 		}
 		

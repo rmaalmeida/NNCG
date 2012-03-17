@@ -44,11 +44,12 @@ namespace CTL
 			
 			List<Dados> data;
 			
-			data  = Flor ();
+			data  = Segmentacao ();
 			
 			
-            imprimeMelhorResultado(BateriaDeTestes(data, t, 10));
-			Console.WriteLine(tempo.ElapsedMilliseconds.ToString ());
+            imprimeMelhorResultado(BateriaDeTestes(data, t, 1));
+			Console.WriteLine();
+			Console.WriteLine("Tempo: " + tempo.ElapsedMilliseconds.ToString ());
         }
 		
 		
@@ -62,7 +63,7 @@ namespace CTL
 					d.ReSeedDados(t.seed, t.folds);	
 				}
 	
-				
+				Console.WriteLine("Faltam " + repetições.ToString() + "repetições");
 				//realiza o teste para cada 'fold'
                 resultFinal.Add(ExecutaTeste(nDados,t));
 
@@ -82,7 +83,7 @@ namespace CTL
 	            List<List<Vector>> dadosTreino = new List<List<Vector>>();
 	            List<List<Vector>> dadosTeste = new List<List<Vector>>();
 	
-	
+				Console.WriteLine(" - Iniciando fold " + fold.ToString());
 	            for (int i = 0; i < grupos.Count; i++)
 	            {
 	                dadosTreino.Add(grupos[i].GetKFoldTreino(nTeste.folds, fold));
@@ -105,11 +106,14 @@ namespace CTL
 					}
 					
 	            }
+				
 	
 	    				
 				TesteColisao teste = new TesteColisao(nTeste);
 	
 	            teste.RealizaTeste(caixas);
+				
+				Console.WriteLine(" - Iniciando testes");
 				
 				result result = new result();
 	            foreach (BoundingVolume c in caixas)
@@ -124,10 +128,13 @@ namespace CTL
 					result.padroes += p.padFora.RowCount;
 	            }
 				
+				Console.WriteLine(" - Gerando Redes " + fold.ToString());
 	            List<Rede> redes = GeraRedesNeurais(teste.PRN, nTeste);
 				
+				Console.WriteLine(" - Pontos de treino " + fold.ToString());
 	            TestaPontos(caixas, redes, nTeste, out result.treinoCertos, out result.treinoErrados);
 	            
+				Console.WriteLine(" - Pontos de teste " + fold.ToString());
 				
 	            if (dadosTeste.Count == dadosTreino.Count)
 	            {
