@@ -5,11 +5,13 @@ using MathNet.Numerics.LinearAlgebra;
 using System.Threading;
 using CTL.NN;
 using CTL.CT;
+using System.Xml.Serialization;
+using System.IO;
 
 
 namespace CTL
 {
-    static class Program
+	static class Program
     {
 		
 		public static bool arquivar = false;
@@ -19,14 +21,12 @@ namespace CTL
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
-			
-			System.Diagnostics.Stopwatch tempo = new System.Diagnostics.Stopwatch();
-			tempo.Start();
-			
+			//teste padrão
+
             Teste t = new Teste();
-            t.seed = 1;
+            t.seed = 10;
             t.folds = 10;
             t.profundidade = 20;
             t.desc = "generico";
@@ -42,14 +42,69 @@ namespace CTL
 			
 			t.BV = 0;
 			
+			//tenta ler o tipoTeste do arquivo.
+			TextReader textreader;
+			try {
+				textreader = new StreamReader("tipoTeste.xml");
+				XmlSerializer serializer = new XmlSerializer(typeof(Teste));
+				t = (Teste)serializer.Deserialize( textreader);
+			} finally {
+				textreader.Close();	
+			}
+			
+			int repet = 1;
+			
 			List<Dados> data;
-			
-			data  = Flor ();
-			
-			
-            imprimeMelhorResultado(BateriaDeTestes(data, t, 1));
+			System.Diagnostics.Stopwatch tempo = new System.Diagnostics.Stopwatch();
+
+			//Iris
+			data = Flor();
+			t.desc = "Iris";
+			tempo.Start();
+            imprimeMelhorResultado(BateriaDeTestes(data, t, repet*50));
 			Console.WriteLine();
 			Console.WriteLine("Tempo: " + tempo.ElapsedMilliseconds.ToString ());
+			
+			//Wine
+			data = Vinho();
+			t.desc = "Wine";
+			tempo.Start();
+            imprimeMelhorResultado(BateriaDeTestes(data, t, repet*20));
+			Console.WriteLine();
+			Console.WriteLine("Tempo: " + tempo.ElapsedMilliseconds.ToString ());
+			
+			//Glass
+			data = Vidro();
+			t.desc = "Glass";
+			tempo.Start();
+            imprimeMelhorResultado(BateriaDeTestes(data, t, repet*10));
+			Console.WriteLine();
+			Console.WriteLine("Tempo: " + tempo.ElapsedMilliseconds.ToString ());
+			
+			//Vowel
+			data = Vogal();
+			t.desc = "Vowel";
+			tempo.Start();
+            imprimeMelhorResultado(BateriaDeTestes(data, t, repet*10));
+			Console.WriteLine();
+			Console.WriteLine("Tempo: " + tempo.ElapsedMilliseconds.ToString ());
+			
+			//Car
+			data = Carro();
+			t.desc = "Car";
+			tempo.Start();
+            imprimeMelhorResultado(BateriaDeTestes(data, t, repet*5));
+			Console.WriteLine();
+			Console.WriteLine("Tempo: " + tempo.ElapsedMilliseconds.ToString ());
+			
+			//Segmentation
+			data = Segmentacao();
+			t.desc = "Segmentation";
+			tempo.Start();
+            imprimeMelhorResultado(BateriaDeTestes(data, t, repet*2));
+			Console.WriteLine();
+			Console.WriteLine("Tempo: " + tempo.ElapsedMilliseconds.ToString ());
+			
         }
 		
 		
@@ -63,7 +118,7 @@ namespace CTL
 					d.ReSeedDados(t.seed, t.folds);	
 				}
 	
-				Console.WriteLine("Faltam " + repetições.ToString() + "repetições");
+				 Console.WriteLine("Faltam " + repetições.ToString() + "repetições");
 				//realiza o teste para cada 'fold'
                 resultFinal.Add(ExecutaTeste(nDados,t));
 
@@ -83,7 +138,7 @@ namespace CTL
 	            List<List<Vector>> dadosTreino = new List<List<Vector>>();
 	            List<List<Vector>> dadosTeste = new List<List<Vector>>();
 	
-				Console.WriteLine(" - Iniciando fold " + fold.ToString());
+				//DEBUG Console.WriteLine(" - Iniciando fold " + fold.ToString());
 	            for (int i = 0; i < grupos.Count; i++)
 	            {
 	                dadosTreino.Add(grupos[i].GetKFoldTreino(nTeste.folds, fold));
@@ -113,7 +168,7 @@ namespace CTL
 	
 	            teste.RealizaTeste(caixas);
 				
-				Console.WriteLine(" - Iniciando testes");
+				 Console.WriteLine(" - Iniciando testes");
 				
 				result result = new result();
 	            foreach (BoundingVolume c in caixas)
@@ -128,13 +183,13 @@ namespace CTL
 					result.padroes += p.padFora.RowCount;
 	            }
 				
-				Console.WriteLine(" - Gerando Redes " + fold.ToString());
+				 Console.WriteLine(" - Gerando Redes " + fold.ToString());
 	            List<Rede> redes = GeraRedesNeurais(teste.PRN, nTeste);
 				
-				Console.WriteLine(" - Pontos de treino " + fold.ToString());
+				 Console.WriteLine(" - Pontos de treino " + fold.ToString());
 	            TestaPontos(caixas, redes, nTeste, out result.treinoCertos, out result.treinoErrados);
 	            
-				Console.WriteLine(" - Pontos de teste " + fold.ToString());
+				 Console.WriteLine(" - Pontos de teste " + fold.ToString());
 				
 	            if (dadosTeste.Count == dadosTreino.Count)
 	            {

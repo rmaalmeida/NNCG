@@ -88,7 +88,7 @@ namespace CTL.CT
 						PRN.Add (p);
 					}
 				}
-				Console.WriteLine(" + - RN " + i.ToString() + " gerada.");
+				 Console.WriteLine(" + - RN " + i.ToString() + " gerada.");
 			}
 		}
 		
