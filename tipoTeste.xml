@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Teste xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <folds>10</folds>
+  <seed>0</seed>
+  <profundidade>20</profundidade>
+  <BV>2</BV>
+  <desc>generico</desc>
+  <AaA>true</AaA>
+  <OaA>false</OaA>
+  <Voto>true</Voto>
+  <Bounds>true</Bounds>
+  <MBC>true</MBC>
+  <MPD>false</MPD>
+  <TODOS>false</TODOS>
+</Teste>
